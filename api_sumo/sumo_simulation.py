@@ -56,9 +56,9 @@ class SumoSimulation(object):
         plt = platform.system()
         if plt == "Windows":
             print("Your system is Windows")
-            self.ng = checkBinary('netgenerate.exe')
-            self.smg = checkBinary('sumo-gui.exe')
-            self.sm = checkBinary('sumo.exe')
+            self.ng = checkBinary("D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM\\bin\\netgenerate.exe")
+            self.smg = checkBinary("D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM\\bin\sumo-gui.exe")
+            self.sm = checkBinary("D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM\\bin\sumo.exe")
 
         else:
             print("Your system is Linux")

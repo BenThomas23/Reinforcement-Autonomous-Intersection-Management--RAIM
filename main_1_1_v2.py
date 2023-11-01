@@ -26,30 +26,29 @@ if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
 else:
-    sys.path.append("/usr/share/sumo/bin") # Para linux
-    sys.path.append("/usr/share/sumo/tools") # Para linux
+    sys.path.append("/usr/share/sumo/bin")  # Para linux
+    sys.path.append("/usr/share/sumo/tools")  # Para linux
     #sys.exit("please declare environment variable 'SUMO_HOME'")
 
 from sumolib import checkBinary  # noqa
 import traci  # noqa
-
 # sys.path.append("/usr/share/sumo/bin") # Para linux
 # sys.path.append("/usr/share/sumo/tools") # Para linux
 
-#%
+# %
 pltf = platform.system()
 if pltf == "Windows":
     print("Your system is Windows")
-    netgenBinary = checkBinary('netgenerate.exe')
-    sumoBinary = checkBinary('sumo-gui.exe')
+    netgenBinary = checkBinary('D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM\\bin\\netgenerate.exe')
+    sumoBinary = checkBinary('D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM\\bin\sumo-gui.exe')
 
 else:
     print("Your system is Linux")
     netgenBinary = checkBinary('netgenerate')
     sumoBinary = checkBinary('sumo-gui')
-#%
+# %
 if pltf == "Windows":
-    root = 'E:/api-sumo_v3/1x1/VAST4'
+    root = 'D:\Ben Thomas\Github\Reinforcement-Autonomous-Intersection-Management--RAIM'
 else:
     root = '/root/RAIM'
 
@@ -75,7 +74,7 @@ random.seed(SEED)
 
 # Writer will output to ./runs/ directory by default
 writer = SummaryWriter()
-#%%
+# %%
 # Params
 nrows = 1
 # Number of columns:
@@ -98,7 +97,7 @@ simulacion = SumoSimulation(red_manhattan, gui=False, lanes=nlanes,
 # Algoritmo para controlar los semáforos. Deprecated in v3
 Fixed = FixedAlgorithm(greentime=(120-10)//2, lanes=nlanes)
 
-#%
+# %
 # simulacion.im.agent.load_param()
 # simulacion.im.agent.load_checkpoint(checkpoint_path='ckpt/ep_collisions_70.pth.tar')
 # simulacion.im.agent.load_checkpoint(step=15)
@@ -106,8 +105,7 @@ Fixed = FixedAlgorithm(greentime=(120-10)//2, lanes=nlanes)
 # simulacion.im.agent.load('ckpt/TD3/150')
 # simulacion.im.agent.load('ckpt/TD3/300_best')
 
-
-#%
+# %
 time_now = time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 start_time = time.time()
 epochs = 1000000
@@ -142,13 +140,13 @@ try:
             simulacion.simulation_duration = 5*60
             simulacion.flow = np.random.randint(25, 600)
 
-        [r,t,s,a,c] = simulacion.run_simulation()
+        [r, t, s, a, c] = simulacion.run_simulation()
         rewards.append(r)
         training_records.append(t)
         ti = simulacion.getTripinfo()
         collisions.append(np.sum(c))
 
-        if ti[0] > 0: # No ha habido error en tripInfo por el # de veh
+        if ti[0] > 0:  # No ha habido error en tripInfo por el # de veh
             try:
                 training_tripinfo.append(ti)
                 aux.append(ti)
@@ -173,10 +171,11 @@ try:
                 # flow += 50
                 if len(a) > 250:
                     # if np.mean(a[:,7][-1000:]) < 0.5:
-                    if np.var(a[:,7][-250:]) < 0.005*flow or len(a) > 1000:
+                    if np.var(a[:, 7][-250:]) < 0.005*flow or len(a) > 1000:
                         flow += 25
                         simulacion.flow = flow
-                        print(f'Increasing flow to: {flow} due to, the var is: {np.var(a[:,7][-100:])}')
+                        print(
+                            f'Increasing flow to: {flow} due to, the var is: {np.var(a[:,7][-100:])}')
                         training_tripinfo = []
                         best_timeloss = 9999
                         best_collisions = 9999
@@ -188,7 +187,8 @@ try:
                     # simulacion.im.agent.save_checkpoint(str(flow) + '_best')
                     simulacion.im.agent.save('ckpt/TD3/' + str(flow) + '_best')
 
-                print(f'Simulation: {epoch}; Mean duration: {ti[5]:.2f}, Mean wtime: {ti[6]:.2f}, Mean timeloss: {ti[7]:.2f}, flow: {simulacion.flow}, reward: {t[1]}\n')
+                print(
+                    f'Simulation: {epoch}; Mean duration: {ti[5]:.2f}, Mean wtime: {ti[6]:.2f}, Mean timeloss: {ti[7]:.2f}, flow: {simulacion.flow}, reward: {t[1]}\n')
                 # print(f'Training records: {t}')
             except Exception as e:
                 print("type error: " + str(e))

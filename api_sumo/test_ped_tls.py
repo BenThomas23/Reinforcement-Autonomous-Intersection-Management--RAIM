@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jun 18 18:45:14 2020
-
 @author: antonio
 """
+"""check whether a person has requested to cross the street"""
 
-
-    """check whether a person has requested to cross the street"""
-
+import traci 
 activeRequest = False
 greenTimeSoFar = 0
 
