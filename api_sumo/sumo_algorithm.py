@@ -39,7 +39,7 @@ class SumoAlgorithm(object):
                     self.pgm[self.pointers[index]])
                 if self.pointers[index] in self.kps:
                     self._when(self.pointers[index],index)
-                else:
+                else: 
                     self.changestate[index] += 1
     def _when(self,pointer,index):
         raise NotImplementedError('_when is not implemented')

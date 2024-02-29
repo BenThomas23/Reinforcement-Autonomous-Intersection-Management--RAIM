@@ -82,7 +82,7 @@ class SumoSimulation(object):
         self.seed = seed
         self.flow = flow
 
-        self.im = IntersectionManager('A0', 'pppqw', seed = self.seed)
+        self.im = IntersectionManager('A0', 'pppqw', seed = self.seed,train=True)
         self.running_reward = -1000
         self.rewards = []
         self.training_records = []
@@ -114,6 +114,9 @@ class SumoSimulation(object):
         self.saC = True
 
     def run_simulation(self):
+        print()
+        print(self.sa)
+        print()
         if not (self.sg and self.ss and self.sa):
             raise ValueError('Graph,Scenario and Algorithm are needed')
 

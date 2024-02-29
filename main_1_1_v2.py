@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 10 16:49:54 2020
-
-@author: anton
-"""
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -16,8 +11,9 @@ import random
 import platform
 import traceback
 import subprocess
-
+from TD3PER.td3_agent import Agent
 import numpy as np
+import matplotlib.pyplot as plt
 
 from torch.utils.tensorboard import SummaryWriter
 from collections import defaultdict
@@ -84,7 +80,7 @@ nlanes = 2
 # Lenght (m):
 length = 200
 
-# Estas líneas son *heredadas* y van a estar deprecated en la versión v3
+
 red_manhattan = ManhattanGraph(3, 3, 300)
 escenario = ScenarioThree(red_manhattan, 250, 500, 800, 900)
 
@@ -95,8 +91,9 @@ simulacion = SumoSimulation(red_manhattan, gui=False, lanes=nlanes,
                             seed=SEED, flow=25)
 
 # Algoritmo para controlar los semáforos. Deprecated in v3
-Fixed = FixedAlgorithm(greentime=(120-10)//2, lanes=nlanes)
-
+Fixed = FixedAlgorithm(greentime=40, lanes=nlanes)
+#Fixed2 = FixedAlgorithmv2(greentime=(120-10)//2,greentime_ped=10, lanes=nlanes)
+algorithm=Agent(518,1)
 # %
 # simulacion.im.agent.load_param()
 # simulacion.im.agent.load_checkpoint(checkpoint_path='ckpt/ep_collisions_70.pth.tar')
@@ -108,15 +105,23 @@ Fixed = FixedAlgorithm(greentime=(120-10)//2, lanes=nlanes)
 # %
 time_now = time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 start_time = time.time()
-epochs = 1000000
+epochs = 50
+
 rewards = []
 training_records = []
 training_tripinfo = []
 aux = []
 collisions = []
 # simulacion.create_route_files_v2()
-
-flow = 50
+simu=[]
+rewardsarr=[]
+wtimearr=[]
+timeloss=[]
+collisionsarr=[]
+flowarr=[]
+traveltimearr=[]
+noofvehicles=[]
+flow = 100
 i = 0
 change_seed_every = 5
 best_timeloss = 9999
@@ -126,20 +131,21 @@ try:
     for epoch in np.arange(epochs):
         simulacion.i_ep = epoch
         simulacion.seed = int(epoch/change_seed_every)
-        simulacion.change_algorithm(Fixed)
+        simulacion.change_algorithm(algorithm)
         simulacion.change_scenario(escenario)
         # simulacion.flow = flow
         if simulacion.im.agent.memory.is_full():
             elapsed_time = time.time() - start_time
-            print(time.strftime("Elapsed time: %H:%M:%S", time.gmtime(elapsed_time)))
+            #print(time.strftime("Elapsed time: %H:%M:%S", time.gmtime(elapsed_time)))
             simulacion.simulation_duration = 5*60
             simulacion.flow = flow
+            print(f"The current flow is {flow}")
         else:
             elapsed_time = time.time() - start_time
-            print(time.strftime("Elapsed time: %H:%M:%S", time.gmtime(elapsed_time)))
+            #print(time.strftime("Elapsed time: %H:%M:%S", time.gmtime(elapsed_time)))
             simulacion.simulation_duration = 5*60
             simulacion.flow = np.random.randint(25, 600)
-
+            print(f"The current random flow is {simulacion.flow}")
         [r, t, s, a, c] = simulacion.run_simulation()
         rewards.append(r)
         training_records.append(t)
@@ -172,8 +178,10 @@ try:
                 if len(a) > 250:
                     # if np.mean(a[:,7][-1000:]) < 0.5:
                     if np.var(a[:, 7][-250:]) < 0.005*flow or len(a) > 1000:
-                        flow += 25
+                        flow += 100
                         simulacion.flow = flow
+                        print(f"The greatest number of collision for the flow {flow} is {best_collisions}")
+                        print(f"The greatest timeloss for the flow {flow} is {timeloss}")
                         print(
                             f'Increasing flow to: {flow} due to, the var is: {np.var(a[:,7][-100:])}')
                         training_tripinfo = []
@@ -181,14 +189,26 @@ try:
                         best_collisions = 9999
 
                 # Guardamos el mejor
-                if best_collisions >= np.sum(c) and best_timeloss >= ti[7]:
-                    best_timeloss = ti[7]
+                if best_collisions >= np.sum(c) and flow==simulacion.flow:
                     best_collisions = np.sum(c)
-                    # simulacion.im.agent.save_checkpoint(str(flow) + '_best')
-                    simulacion.im.agent.save('ckpt/TD3/' + str(flow) + '_best')
+                    #simulacion.im.agent.save_checkpoint(str(flow) + '_best')
+                    simulacion.im.agent.save('ckpt/TD3/'+str(flow)+'_best')
+                if best_timeloss>=ti[7] and flow==simulacion.flow:
+                    best_timeloss = ti[7]
+                
+                simu.append(epoch)
+                rewardsarr.append(t[1])
+                wtimearr.append(ti[6])
+                timeloss.append(ti[7])
+                collisionsarr.append(np.sum(c))
+                flowarr.append(simulacion.flow)
+                traveltimearr.append(ti[5])
+                noofvehicles.append(ti[0])
 
                 print(
                     f'Simulation: {epoch}; Mean duration: {ti[5]:.2f}, Mean wtime: {ti[6]:.2f}, Mean timeloss: {ti[7]:.2f}, flow: {simulacion.flow}, reward: {t[1]}\n')
+                print(f"The greatest number of collision for the flow {flow} is {best_collisions}")
+                print(f"The greatest timeloss for the flow {flow} is {best_timeloss}")
                 # print(f'Training records: {t}')
             except Exception as e:
                 print("type error: " + str(e))
@@ -198,6 +218,57 @@ except Exception as e:
     simulacion.close_simulation()
 
 elapsed_time = time.time() - start_time
+
 print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
 
 simulacion.im.agent.save_weights()
+
+xaxis = simu
+
+fig, ax = plt.subplots()
+ax.plot(xaxis, timeloss)
+ax.set(xlabel='Simulation', ylabel='Timeloss',
+       title='Timeloss Vs Simu')
+ax.grid()
+fig1, ax1 = plt.subplots()
+ax1.plot(xaxis, collisionsarr)
+ax1.set(xlabel='Simulation', ylabel='Collisions',
+       title='Collisions Vs Simulations')
+ax1.grid()
+fig2, ax2 = plt.subplots()
+ax2.plot(xaxis, flowarr)
+ax2.set(xlabel='Simulation', ylabel='Flow',
+       title='Flow Vs Simulations')
+ax2.grid()
+fig3, ax3 = plt.subplots()
+ax3.plot(xaxis, wtimearr)
+ax3.set(xlabel='Simulation', ylabel='Wait Time',
+       title='Wait Time Vs Simulations')
+ax3.grid()
+fig4, ax4 = plt.subplots()
+ax4.plot(xaxis, traveltimearr)
+ax4.set(xlabel='Simulation', ylabel='Travel Time',
+       title='Travel Time Vs Simulations')
+ax4.grid()
+fig5, ax5 = plt.subplots()
+ax5.plot(xaxis, rewardsarr)
+ax5.set(xlabel='Simulation', ylabel='Rewards',
+       title='Rewards Vs Simulations')
+ax5.grid()
+fig6, ax6 = plt.subplots()
+ax6.plot(xaxis, noofvehicles)
+ax6.set(xlabel='Simulation', ylabel='Number of Vehicles',
+       title='Number of Vehicles Vs Simulations')
+ax6.grid()
+
+
+fig.savefig("test.png")
+fig1.savefig("test1.png")
+fig2.savefig("test2.png")
+fig3.savefig("test3.png")
+fig4.savefig("test4.png")
+fig5.savefig("test5.png")
+fig5.savefig("test6.png")
+
+plt.show()
+# %%

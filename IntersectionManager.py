@@ -13,7 +13,7 @@ import torch
 import math
 import random
 import threading
-
+ 
 import numpy as np
 import traci.constants as tc
 
@@ -45,7 +45,7 @@ class IntersectionManager:
         self._queue_width = 12
         self._scaler = 1
         self._input_variables = 16 # speed, acceleration, etc
-        self.max_vehicles = 32
+        self.max_vehicles = 64
 
         self.state = defaultdict(partial(np.ndarray, 0))
         self.new_state = defaultdict(partial(np.ndarray, 0))
@@ -610,12 +610,12 @@ class IntersectionManager:
             vehicles = traci.junction.getContextSubscriptionResults(self._id)
 
             if vehicles:
-                # print(f'\n Found {len(vehicles)} vehicles before filtering')
-                # print(f'\t Keys: {vehicles.keys()}')
+                #print(f'\n Found {len(vehicles)} vehicles before filtering')
+                #print(f'\t Keys: {vehicles.keys()}')
                 return self._remove_moving_away(self._id, vehicles) # If vehicles are approaching the intersection
 
             else:
-                # print('No vehicles found')
+                #print('No vehicles found')
                 return -1
 
         except Exception as e:
